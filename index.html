@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChoriLight - Pedidos</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111;min-height:100vh}
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:2rem;padding:2rem}
+#login-screen h1{font-size:32px;font-weight:600;letter-spacing:-1px}
+#login-screen p{font-size:14px;color:#888;margin-top:-1.5rem}
+.login-form{display:flex;flex-direction:column;gap:12px;width:100%;max-width:300px}
+.login-form input{width:100%;padding:12px 16px;font-size:15px;border:1px solid #e0e0e0;border-radius:10px;background:#f9f9f9;color:#111;outline:none}
+.login-form input:focus{border-color:#111;background:#fff}
+.login-btn{padding:12px;font-size:15px;font-weight:600;background:#111;color:#fff;border:none;border-radius:10px;cursor:pointer}
+.login-error{font-size:13px;color:#c0392b;display:none;text-align:center}
+#app{display:none;padding:1.5rem 1rem 3rem;max-width:680px;margin:0 auto}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.top-bar h1{font-size:22px;font-weight:600;letter-spacing:-0.5px}
+.top-actions{display:flex;gap:8px}
+.icon-btn{font-size:13px;color:#666;background:none;border:1px solid #e0e0e0;padding:7px 14px;border-radius:8px;cursor:pointer}
+.icon-btn:hover{color:#111;border-color:#aaa}
+.last-update{font-size:11px;color:#bbb;text-align:right;margin-bottom:1.25rem;margin-top:-1rem}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.75rem}
+.metric{background:#f5f5f5;border-radius:10px;padding:1rem}
+.metric-label{font-size:12px;color:#888;margin-bottom:6px}
+.metric-value{font-size:24px;font-weight:600}
+.section-title{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px}
+.chart-wrap{background:#f5f5f5;border-radius:14px;padding:1.25rem;margin-bottom:1.5rem}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px}
+.bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;height:100%;justify-content:flex-end}
+.bar{width:100%;background:#111;border-radius:3px 3px 0 0;min-height:4px}
+.bar:hover{opacity:0.5}
+.bar-label{font-size:10px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;text-align:center}
+.bar-val{font-size:10px;color:#aaa}
+.donut-row{display:flex;align-items:center;gap:1.5rem}
+.donut-wrap{width:100px;height:100px;flex-shrink:0}
+.donut-wrap svg{width:100%;height:100%}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.orders-list{display:flex;flex-direction:column;gap:8px}
+.order-card{background:#f5f5f5;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.order-name{font-size:14px;font-weight:600}
+.order-meta{font-size:12px;color:#888;margin-top:2px}
+.order-right{text-align:right;flex-shrink:0}
+.order-total{font-size:14px;font-weight:600}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;margin-top:4px}
+.badge-pendiente{background:#e8e8e8;color:#555}
+.badge-entregado{background:#d4edda;color:#1a6032}
+.badge-cancelado{background:#fde8e8;color:#a32d2d}
+.tab-row{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tab{font-size:13px;padding:6px 14px;border-radius:99px;border:1px solid #e0e0e0;background:none;cursor:pointer;color:#888}
+.tab.active{background:#111;color:#fff;border-color:#111}
+.loading{font-size:14px;color:#aaa;text-align:center;padding:2rem 0}
+.empty{font-size:14px;color:#bbb;text-align:center;padding:2rem 0}
+</style>
+</head>
+<body>
+<div id="login-screen">
+  <div style="text-align:center"><h1>ChoriLight</h1><p>Panel de pedidos</p></div>
+  <div class="login-form">
+    <input type="text" id="u-input" placeholder="Usuario"/>
+    <input type="password" id="p-input" placeholder="Contraseña"/>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <span class="login-error" id="login-err">Usuario o contraseña incorrectos</span>
+  </div>
+</div>
+<div id="app">
+  <div class="top-bar">
+    <h1>ChoriLight</h1>
+    <div class="top-actions">
+      <button class="icon-btn" onclick="loadData()">↻ Actualizar</button>
+      <button class="icon-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+  <div class="last-update" id="last-update"></div>
+  <div class="metrics" id="metrics"><div class="loading">Cargando...</div></div>
+  <div class="chart-wrap">
+    <div class="section-title" style="margin-bottom:16px">Total por pedido</div>
+    <div class="bar-chart" id="bar-chart"></div>
+  </div>
+  <div class="chart-wrap">
+    <div class="section-title" style="margin-bottom:16px">Medio de pago</div>
+    <div class="donut-row">
+      <div class="donut-wrap"><svg id="donut-svg" viewBox="0 0 100 100"></svg></div>
+      <div class="donut-legend" id="donut-legend"></div>
+    </div>
+  </div>
+  <div class="section-title">Pedidos</div>
+  <div class="tab-row">
+    <button class="tab active" onclick="filterOrders('Todos',this)">Todos</button>
+    <button class="tab" onclick="filterOrders('Pendiente',this)">Pendiente</button>
+    <button class="tab" onclick="filterOrders('Entregado',this)">Entregado</button>
+    <button class="tab" onclick="filterOrders('Cancelado',this)">Cancelado</button>
+  </div>
+  <div class="orders-list" id="orders-list"><div class="loading">Cargando...</div></div>
+</div>
+<script>
+const CREDS={usuario:'chorilight',password:'admin123'};
+const API_URL='https://script.google.com/macros/s/AKfycbxwWvBebO3ljZJgolwCZF3g9BF6Zx4VeTeJ6aDxsFoUsBkYgBHDrw-SDfbtA_q4SSPQ/exec';
+let ORDERS=[],currentFilter='Todos';
+function doLogin(){const u=document.getElementById('u-input').value.trim(),p=document.getElementById('p-input').value.trim();if(u===CREDS.usuario&&p===CREDS.password){document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='block';loadData();}else{document.getElementById('login-err').style.display='block';}}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+function doLogout(){document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';ORDERS=[];}
+async function loadData(){document.getElementById('orders-list').innerHTML='<div class="loading">Cargando...</div>';try{const res=await fetch(API_URL);const data=await res.json();ORDERS=data.filter(r=>r.Nombre||r.nombre);document.getElementById('last-update').textContent='Actualizado: '+new Date().toLocaleTimeString('es-CO');renderAll();}catch(e){document.getElementById('orders-list').innerHTML='<div class="empty">Error cargando datos.</div>';}}
+function getVal(row,...keys){for(const k of keys){if(row[k]!==undefined&&row[k]!=='')return row[k];}return '';}
+function renderAll(){renderMetrics();renderBarChart();renderDonut();renderOrders();}
+function renderMetrics(){const total=ORDERS.reduce((s,o)=>s+(Number(getVal(o,'Total','total'))||0),0),paquetes=ORDERS.reduce((s,o)=>s+(Number(getVal(o,'Paquetes','paquetes'))||0),0),pendientes=ORDERS.filter(o=>(getVal(o,'Estado','estado')||'').toLowerCase()==='pendiente').length;document.getElementById('metrics').innerHTML=[{label:'Pedidos',value:ORDERS.length},{label:'Paquetes',value:paquetes},{label:'Pendientes',value:pendientes},{label:'Total $',value:'$'+total.toLocaleString('es-CO')}].map(d=>`<div class="metric"><div class="metric-label">${d.label}</div><div class="metric-value">${d.value}</div></div>`).join('');}
+function renderBarChart(){const w=ORDERS.filter(o=>Number(getVal(o,'Total','total'))>0);if(!w.length){document.getElementById('bar-chart').innerHTML='<div class="empty">Sin datos</div>';return;}const max=Math.max(...w.map(o=>Number(getVal(o,'Total','total'))));document.getElementById('bar-chart').innerHTML=w.map(o=>{const t=Number(getVal(o,'Total','total')),n=(getVal(o,'Nombre','nombre')||'').split(' ')[0];return`<div class="bar-col"><div class="bar-val">$${(t/1000).toFixed(0)}k</div><div class="bar" style="height:${Math.round((t/max)*100)}%"></div><div class="bar-label">${n}</div></div>`;}).join('');}
+function renderDonut(){const counts={};ORDERS.forEach(o=>{const p=getVal(o,'Medio de pago','pago')||'otro';counts[p]=(counts[p]||0)+1;});const entries=Object.entries(counts),total=ORDERS.length,colors=['#111','#888','#ccc','#555'];let offset=0,paths='';const r=35,cx=50,cy=50,c=2*Math.PI*r;entries.forEach(([k,v],i)=>{const pct=v/total,dash=pct*c,gap=c-dash;paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i%4]}" stroke-width="16" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" stroke-dashoffset="${(-offset*c).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;offset+=pct;});document.getElementById('donut-svg').innerHTML=paths;document.getElementById('donut-legend').innerHTML=entries.map(([k,v],i)=>`<div class="legend-item"><div class="legend-dot" style="background:${colors[i%4]}"></div><span>${k} <span style="color:#aaa">(${v})</span></span></div>`).join('');}
+function filterOrders(f,btn){currentFilter=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderOrders();}
+function renderOrders(){const filtered=currentFilter==='Todos'?ORDERS:ORDERS.filter(o=>(getVal(o,'Estado','estado')||'').toLowerCase()===currentFilter.toLowerCase());if(!filtered.length){document.getElementById('orders-list').innerHTML='<div class="empty">Sin pedidos</div>';return;}document.getElementById('orders-list').innerHTML=filtered.map(o=>{const nombre=getVal(o,'Nombre','nombre')||'—',paquetes=getVal(o,'Paquetes','paquetes')||'—',total=Number(getVal(o,'Total','total'))||0,pago=getVal(o,'Medio de pago','pago')||'—',fecha=getVal(o,'Fecha','fecha')||'',dir=getVal(o,'Direccion','direccion','Dirección')||'',estado=getVal(o,'Estado','estado')||'Pendiente';return`<div class="order-card"><div><div class="order-name">${nombre}</div><div class="order-meta">${paquetes} paquetes · ${pago}${fecha?' · '+fecha:''}</div>${dir?`<div class="order-meta">${dir}</div>`:''}</div><div class="order-right"><div class="order-total">${total?'$'+total.toLocaleString('es-CO'):'—'}</div><span class="badge badge-${estado.toLowerCase()}">${estado}</span></div></div>`;}).join('');}
+</script>
+</body>
+</html>
