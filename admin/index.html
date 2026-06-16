@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChoriLight Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111;min-height:100vh}
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:2rem;padding:2rem}
+#login-screen h1{font-size:32px;font-weight:600;letter-spacing:-1px}
+#login-screen p{font-size:14px;color:#888;margin-top:4px}
+.login-form{display:flex;flex-direction:column;gap:12px;width:100%;max-width:300px}
+.login-form input{width:100%;padding:12px 16px;font-size:15px;border:1px solid #e0e0e0;border-radius:10px;background:#f9f9f9;color:#111;outline:none}
+.login-form input:focus{border-color:#111;background:#fff}
+.login-btn{padding:12px;font-size:15px;font-weight:600;background:#111;color:#fff;border:none;border-radius:10px;cursor:pointer}
+.login-error{font-size:13px;color:#c0392b;display:none;text-align:center}
+#app{display:none;min-height:100vh}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:200px;flex-shrink:0;background:#fafafa;border-right:1px solid #eee;padding:1.5rem 1rem;display:flex;flex-direction:column;gap:4px}
+.sidebar h1{font-size:18px;font-weight:600;letter-spacing:-0.5px;margin-bottom:1.5rem;padding:0 8px}
+.nav-btn{display:flex;align-items:center;gap:10px;text-align:left;font-size:14px;color:#555;background:none;border:none;border-radius:8px;padding:10px 12px;cursor:pointer;width:100%}
+.nav-btn:hover{background:#f0f0f0;color:#111}
+.nav-btn.active{background:#111;color:#fff}
+.nav-spacer{flex:1}
+.logout-btn{font-size:13px;color:#888;background:none;border:1px solid #e0e0e0;padding:8px 12px;border-radius:8px;cursor:pointer}
+.content{flex:1;padding:1.75rem 2rem 3rem;max-width:920px}
+.section{display:none}
+.section.active{display:block}
+.page-title{font-size:22px;font-weight:600;letter-spacing:-0.5px;margin-bottom:1.5rem}
+.last-update{font-size:11px;color:#bbb;text-align:right;margin-bottom:1.25rem;margin-top:-1rem}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.75rem}
+.metric{background:#f5f5f5;border-radius:10px;padding:1rem}
+.metric-label{font-size:12px;color:#888;margin-bottom:6px}
+.metric-value{font-size:24px;font-weight:600}
+.section-title{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px}
+.chart-wrap{background:#f5f5f5;border-radius:14px;padding:1.25rem;margin-bottom:1.5rem}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px}
+.bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;height:100%;justify-content:flex-end}
+.bar{width:100%;background:#111;border-radius:3px 3px 0 0;min-height:4px}
+.bar-label{font-size:10px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;text-align:center}
+.bar-val{font-size:10px;color:#aaa}
+.donut-row{display:flex;align-items:center;gap:1.5rem}
+.donut-wrap{width:100px;height:100px;flex-shrink:0}
+.donut-wrap svg{width:100%;height:100%}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.orders-list{display:flex;flex-direction:column;gap:8px}
+.order-card{background:#f5f5f5;border-radius:10px;padding:12px 14px}
+.order-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.order-name{font-size:14px;font-weight:600}
+.order-meta{font-size:12px;color:#888;margin-top:2px}
+.order-right{text-align:right;flex-shrink:0}
+.order-total{font-size:14px;font-weight:600}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;margin-top:4px}
+.badge-pendiente{background:#e8e8e8;color:#555}
+.badge-confirmado{background:#dbe9fb;color:#1c4f8a}
+.badge-entregado{background:#d4edda;color:#1a6032}
+.badge-cancelado{background:#fde8e8;color:#a32d2d}
+.status-btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.status-btn{font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#555}
+.status-btn:hover{background:#111;color:#fff;border-color:#111}
+.status-btn.active{background:#111;color:#fff;border-color:#111}
+.tab-row{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tab{font-size:13px;padding:6px 14px;border-radius:99px;border:1px solid #e0e0e0;background:none;cursor:pointer;color:#888}
+.tab.active{background:#111;color:#fff;border-color:#111}
+.loading{font-size:14px;color:#aaa;text-align:center;padding:2rem 0}
+.empty{font-size:14px;color:#bbb;text-align:center;padding:2rem 0}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;display:none;z-index:999}
+.manage-card{background:#f5f5f5;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.manage-card .field-name{font-weight:600;font-size:14px}
+.manage-card .field-meta{font-size:12px;color:#888}
+.manage-card .grow{flex:1}
+.mini-input{font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;width:80px}
+.mini-btn{font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#555}
+.mini-btn:hover{background:#111;color:#fff;border-color:#111}
+.mini-btn.danger:hover{background:#c0392b;border-color:#c0392b}
+.toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:#555;cursor:pointer}
+.add-form{background:#fafafa;border:1px dashed #ddd;border-radius:10px;padding:14px;margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.add-form input,.add-form select{font-size:13px;padding:8px 10px;border:1px solid #ddd;border-radius:8px}
+.add-form button{grid-column:1/-1;justify-self:start;padding:8px 16px;font-size:13px;font-weight:600;background:#111;color:#fff;border:none;border-radius:8px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="login-screen">
+  <div style="text-align:center"><h1>ChoriLight</h1><p>Panel de administración</p></div>
+  <div class="login-form">
+    <input type="text" id="u-input" placeholder="Usuario"/>
+    <input type="password" id="p-input" placeholder="Contraseña"/>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <span class="login-error" id="login-err">Usuario o contraseña incorrectos</span>
+  </div>
+</div>
+<div id="app">
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>ChoriLight</h1>
+      <button class="nav-btn active" data-section="dashboard" onclick="showSection('dashboard',this)">📊 Dashboard</button>
+      <button class="nav-btn" data-section="online" onclick="showSection('online',this)">🛒 Órdenes Online</button>
+      <button class="nav-btn" data-section="inventario" onclick="showSection('inventario',this)">📦 Inventario / Stock</button>
+      <button class="nav-btn" data-section="banners" onclick="showSection('banners',this)">🖼️ Banners</button>
+      <button class="nav-btn" data-section="pagos" onclick="showSection('pagos',this)">💳 Métodos de pago</button>
+      <div class="nav-spacer"></div>
+      <button class="logout-btn" onclick="doLogout()">Salir</button>
+    </aside>
+    <main class="content">
+      <!-- DASHBOARD: pedidos desde la hoja de Google (manuales / por teléfono) -->
+      <section class="section active" id="section-dashboard">
+        <div class="page-title">Dashboard &amp; Pedidos</div>
+        <div class="last-update" id="last-update"></div>
+        <div class="metrics" id="metrics"><div class="loading">Cargando...</div></div>
+        <div class="chart-wrap">
+          <div class="section-title" style="margin-bottom:16px">Total por pedido</div>
+          <div class="bar-chart" id="bar-chart"></div>
+        </div>
+        <div class="chart-wrap">
+          <div class="section-title" style="margin-bottom:16px">Medio de pago</div>
+          <div class="donut-row">
+            <div class="donut-wrap"><svg id="donut-svg" viewBox="0 0 100 100"></svg></div>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+        <div class="section-title">Pedidos</div>
+        <div class="tab-row">
+          <button class="tab active" onclick="filterOrders('Todos',this)">Todos</button>
+          <button class="tab" onclick="filterOrders('Pendiente',this)">Pendiente</button>
+          <button class="tab" onclick="filterOrders('Entregado',this)">Entregado</button>
+          <button class="tab" onclick="filterOrders('Cancelado',this)">Cancelado</button>
+        </div>
+        <div class="orders-list" id="orders-list"><div class="loading">Cargando...</div></div>
+        <button class="mini-btn" style="margin-top:14px" onclick="loadData()">↻ Actualizar</button>
+      </section>
+
+      <!-- ÓRDENES ONLINE: generadas desde el carrito del Front -->
+      <section class="section" id="section-online">
+        <div class="page-title">Órdenes Online</div>
+        <div id="online-list" class="orders-list"><div class="empty">Sin órdenes online todavía</div></div>
+      </section>
+
+      <!-- INVENTARIO / STOCK -->
+      <section class="section" id="section-inventario">
+        <div class="page-title">Inventario / Stock</div>
+        <div id="inventario-list"></div>
+        <div class="section-title" style="margin-top:18px">Agregar producto</div>
+        <div class="add-form">
+          <input id="inv-nombre" placeholder="Nombre"/>
+          <input id="inv-categoria" placeholder="Categoría"/>
+          <input id="inv-precio" type="number" placeholder="Precio"/>
+          <input id="inv-stock" type="number" placeholder="Stock"/>
+          <button onclick="addProduct()">Agregar producto</button>
+        </div>
+      </section>
+
+      <!-- BANNERS -->
+      <section class="section" id="section-banners">
+        <div class="page-title">Banners</div>
+        <div id="banners-list"></div>
+        <div class="section-title" style="margin-top:18px">Agregar banner</div>
+        <div class="add-form">
+          <input id="ban-titulo" placeholder="Título"/>
+          <input id="ban-subtitulo" placeholder="Subtítulo"/>
+          <button onclick="addBanner()">Agregar banner</button>
+        </div>
+      </section>
+
+      <!-- MÉTODOS DE PAGO -->
+      <section class="section" id="section-pagos">
+        <div class="page-title">Métodos de pago</div>
+        <div id="pagos-list"></div>
+        <div class="section-title" style="margin-top:18px">Agregar método</div>
+        <div class="add-form">
+          <input id="pago-nombre" placeholder="Nombre del método"/>
+          <button onclick="addPayment()">Agregar método</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/data.js"></script>
+<script>
+const CREDS={usuario:'chorilight',passwordHash:'240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'};
+const API_URL='https://script.google.com/macros/s/AKfycbxwWvBebO3ljZJgolwCZF3g9BF6Zx4VeTeJ6aDxsFoUsBkYgBHDrw-SDfbtA_q4SSPQ/exec';
+let ORDERS=[],currentFilter='Todos';
+
+async function sha256Hex(str){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function doLogin(){const u=document.getElementById('u-input').value.trim(),p=document.getElementById('p-input').value.trim();const hash=await sha256Hex(p);if(u===CREDS.usuario&&hash===CREDS.passwordHash){document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='block';loadData();renderOnlineOrders();renderInventario();renderBanners();renderPagos();}else{document.getElementById('login-err').style.display='block';}}
+document.getElementById('u-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('p-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+function doLogout(){document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';ORDERS=[];}
+
+function showSection(name,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('section-'+name).classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+
+/* ---------- Dashboard / Pedidos (Google Apps Script) ---------- */
+async function loadData(){document.getElementById('orders-list').innerHTML='<div class="loading">Cargando...</div>';try{const res=await fetch(API_URL+'?t='+Date.now());if(!res.ok)throw new Error('HTTP '+res.status);const data=await res.json();if(!Array.isArray(data))throw new Error('Respuesta inválida');ORDERS=data.filter(r=>r.Nombre||r.nombre);document.getElementById('last-update').textContent='Actualizado: '+new Date().toLocaleTimeString('es-CO');renderAll();}catch(e){document.getElementById('orders-list').innerHTML='<div class="empty">Error cargando datos.</div>';}}
+function getVal(row,...keys){for(const k of keys){if(row[k]!==undefined&&row[k]!=='')return row[k];}return '';}
+function renderAll(){renderMetrics();renderBarChart();renderDonut();renderOrders();}
+function renderMetrics(){const total=ORDERS.reduce((s,o)=>s+(Number(getVal(o,'Total','total'))||0),0),paquetes=ORDERS.reduce((s,o)=>s+(Number(getVal(o,'Paquetes','paquetes'))||0),0),pendientes=ORDERS.filter(o=>(getVal(o,'Estado','estado')||'').toLowerCase()==='pendiente').length;document.getElementById('metrics').innerHTML=[{label:'Pedidos',value:ORDERS.length},{label:'Paquetes',value:paquetes},{label:'Pendientes',value:pendientes},{label:'Total $',value:'$'+total.toLocaleString('es-CO')}].map(d=>`<div class="metric"><div class="metric-label">${esc(d.label)}</div><div class="metric-value">${esc(d.value)}</div></div>`).join('');}
+function renderBarChart(){const w=ORDERS.filter(o=>Number(getVal(o,'Total','total'))>0);if(!w.length){document.getElementById('bar-chart').innerHTML='<div class="empty">Sin datos</div>';return;}const max=Math.max(...w.map(o=>Number(getVal(o,'Total','total'))));document.getElementById('bar-chart').innerHTML=w.map(o=>{const t=Number(getVal(o,'Total','total')),n=(getVal(o,'Nombre','nombre')||'').split(' ')[0];return`<div class="bar-col"><div class="bar-val">$${(t/1000).toFixed(0)}k</div><div class="bar" style="height:${Math.round((t/max)*100)}%"></div><div class="bar-label">${esc(n)}</div></div>`;}).join('');}
+function renderDonut(){const counts={};ORDERS.forEach(o=>{const p=getVal(o,'Medio de pago','pago')||'otro';counts[p]=(counts[p]||0)+1;});const entries=Object.entries(counts),total=ORDERS.length,colors=['#111','#888','#ccc','#555'];let offset=0,paths='';const r=35,cx=50,cy=50,c=2*Math.PI*r;entries.forEach(([k,v],i)=>{const pct=v/total,dash=pct*c,gap=c-dash;paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i%4]}" stroke-width="16" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" stroke-dashoffset="${(-offset*c).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;offset+=pct;});document.getElementById('donut-svg').innerHTML=paths;document.getElementById('donut-legend').innerHTML=entries.map(([k,v],i)=>`<div class="legend-item"><div class="legend-dot" style="background:${colors[i%4]}"></div><span>${esc(k)} <span style="color:#aaa">(${v})</span></span></div>`).join('');}
+function filterOrders(f,btn){currentFilter=f;document.querySelectorAll('#section-dashboard .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderOrders();}
+function renderOrders(){const filtered=currentFilter==='Todos'?ORDERS:ORDERS.filter(o=>(getVal(o,'Estado','estado')||'').toLowerCase()===currentFilter.toLowerCase());if(!filtered.length){document.getElementById('orders-list').innerHTML='<div class="empty">Sin pedidos</div>';return;}document.getElementById('orders-list').innerHTML=filtered.map((o,i)=>{const nombre=getVal(o,'Nombre','nombre')||'—',paquetes=getVal(o,'Paquetes','paquetes')||'—',total=Number(getVal(o,'Total','total'))||0,pago=getVal(o,'Medio de pago','pago')||'—',fecha=getVal(o,'Fecha','fecha')||'',dir=getVal(o,'Direccion','direccion','Dirección')||'',estado=getVal(o,'Estado','estado')||'Pendiente',row=o._row;const statusBtns=row===undefined?'<span class="order-meta">Sin ID de fila — no se puede actualizar</span>':`<button class="status-btn${estado==='Pendiente'?' active':''}" onclick="updateStatus(${row},'Pendiente',this)">Pendiente</button><button class="status-btn${estado==='Entregado'?' active':''}" onclick="updateStatus(${row},'Entregado',this)">Entregado</button><button class="status-btn${estado==='Cancelado'?' active':''}" onclick="updateStatus(${row},'Cancelado',this)">Cancelado</button>`;return`<div class="order-card"><div class="order-top"><div><div class="order-name">${esc(nombre)}</div><div class="order-meta">${esc(paquetes)} paquetes · ${esc(pago)}${fecha?' · '+esc(fecha):''}</div>${dir?`<div class="order-meta">${esc(dir)}</div>`:''}</div><div class="order-right"><div class="order-total">${total?'$'+total.toLocaleString('es-CO'):'—'}</div><span class="badge badge-${esc(estado.toLowerCase())}">${esc(estado)}</span></div></div><div class="status-btns">${statusBtns}</div></div>`;}).join('');}
+async function updateStatus(row,status,btn){const card=btn.closest('.order-card');const btns=card.querySelectorAll('.status-btn');const prevActiveBtn=card.querySelector('.status-btn.active');const badge=card.querySelector('.badge');const prevStatus=badge.textContent;const idx=ORDERS.findIndex(o=>o._row===row);btns.forEach(b=>b.classList.remove('active'));btn.classList.add('active');badge.className='badge badge-'+status.toLowerCase();badge.textContent=status;if(idx>-1)ORDERS[idx]['Estado']=status;renderMetrics();try{const res=await fetch(API_URL+'?action=updateStatus&row='+encodeURIComponent(row)+'&status='+encodeURIComponent(status));if(!res.ok)throw new Error('HTTP '+res.status);showToast('Estado actualizado ✓');}catch(e){btns.forEach(b=>b.classList.remove('active'));if(prevActiveBtn)prevActiveBtn.classList.add('active');badge.className='badge badge-'+prevStatus.toLowerCase();badge.textContent=prevStatus;if(idx>-1)ORDERS[idx]['Estado']=prevStatus;renderMetrics();showToast('Error al actualizar');}}
+
+/* ---------- Órdenes Online (carrito del Front, en localStorage) ---------- */
+const ONLINE_STATUSES=['Pendiente','Confirmado','Entregado','Cancelado'];
+function renderOnlineOrders(){const orders=getOnlineOrders();const el=document.getElementById('online-list');if(!orders.length){el.innerHTML='<div class="empty">Sin órdenes online todavía</div>';return;}el.innerHTML=orders.map(o=>{const items=(o.items||[]).map(it=>`${esc(it.nombre)} x${it.cantidad}`).join(', ');const estado=o.estado||'Pendiente';const btns=ONLINE_STATUSES.map(s=>`<button class="status-btn${estado===s?' active':''}" onclick="setOnlineStatus('${o.id}','${s}')">${s}</button>`).join('');return`<div class="order-card"><div class="order-top"><div><div class="order-name">${esc(o.nombre||'Cliente')}</div><div class="order-meta">${items}</div><div class="order-meta">${esc(o.telefono||'')} ${o.direccion?'· '+esc(o.direccion):''}</div></div><div class="order-right"><div class="order-total">${money(o.total)}</div><span class="badge badge-${estado.toLowerCase()}">${esc(estado)}</span></div></div><div class="status-btns">${btns}</div></div>`;}).join('');}
+function setOnlineStatus(id,status){const orders=getOnlineOrders();const idx=orders.findIndex(o=>o.id===id);if(idx>-1){orders[idx].estado=status;saveOnlineOrders(orders);renderOnlineOrders();showToast('Estado actualizado ✓');}}
+
+/* ---------- Inventario / Stock ---------- */
+function renderInventario(){const products=getProducts();const el=document.getElementById('inventario-list');if(!products.length){el.innerHTML='<div class="empty">Sin productos</div>';return;}el.innerHTML=products.map(p=>`<div class="manage-card"><div class="grow"><div class="field-name">${esc(p.nombre)}</div><div class="field-meta">${esc(p.categoria)} · ${money(p.precio)} · ★${p.rating||0} (${p.resenas||0})</div></div><input class="mini-input" type="number" min="0" value="${p.stock}" onchange="updateStock('${p.id}',this.value)"/><button class="mini-btn danger" onclick="removeProduct('${p.id}')">Eliminar</button></div>`).join('');}
+function updateStock(id,value){const products=getProducts();const idx=products.findIndex(p=>p.id===id);if(idx>-1){products[idx].stock=Math.max(0,Number(value)||0);saveProducts(products);showToast('Stock actualizado ✓');}}
+function removeProduct(id){const products=getProducts().filter(p=>p.id!==id);saveProducts(products);renderInventario();showToast('Producto eliminado');}
+function addProduct(){const nombre=document.getElementById('inv-nombre').value.trim();const categoria=document.getElementById('inv-categoria').value.trim()||'General';const precio=Number(document.getElementById('inv-precio').value)||0;const stock=Number(document.getElementById('inv-stock').value)||0;if(!nombre){showToast('Falta el nombre');return;}const products=getProducts();products.push({id:uid('p'),nombre,categoria,precio,stock,rating:5,resenas:0,img:''});saveProducts(products);renderInventario();document.getElementById('inv-nombre').value='';document.getElementById('inv-categoria').value='';document.getElementById('inv-precio').value='';document.getElementById('inv-stock').value='';showToast('Producto agregado ✓');}
+
+/* ---------- Banners ---------- */
+function renderBanners(){const banners=getBanners();const el=document.getElementById('banners-list');if(!banners.length){el.innerHTML='<div class="empty">Sin banners</div>';return;}el.innerHTML=banners.map(b=>`<div class="manage-card"><div class="grow"><div class="field-name">${esc(b.titulo)}</div><div class="field-meta">${esc(b.subtitulo||'')}</div></div><label class="toggle"><input type="checkbox" ${b.activo?'checked':''} onchange="toggleBanner('${b.id}',this.checked)"/> Activo</label><button class="mini-btn danger" onclick="removeBanner('${b.id}')">Eliminar</button></div>`).join('');}
+function toggleBanner(id,activo){const banners=getBanners();const idx=banners.findIndex(b=>b.id===id);if(idx>-1){banners[idx].activo=activo;saveBanners(banners);showToast('Banner actualizado ✓');}}
+function removeBanner(id){const banners=getBanners().filter(b=>b.id!==id);saveBanners(banners);renderBanners();showToast('Banner eliminado');}
+function addBanner(){const titulo=document.getElementById('ban-titulo').value.trim();const subtitulo=document.getElementById('ban-subtitulo').value.trim();if(!titulo){showToast('Falta el título');return;}const banners=getBanners();banners.push({id:uid('b'),titulo,subtitulo,activo:true});saveBanners(banners);renderBanners();document.getElementById('ban-titulo').value='';document.getElementById('ban-subtitulo').value='';showToast('Banner agregado ✓');}
+
+/* ---------- Métodos de pago ---------- */
+function renderPagos(){const payments=getPayments();const el=document.getElementById('pagos-list');if(!payments.length){el.innerHTML='<div class="empty">Sin métodos de pago</div>';return;}el.innerHTML=payments.map(p=>`<div class="manage-card"><div class="grow field-name">${esc(p.nombre)}</div><label class="toggle"><input type="checkbox" ${p.activo?'checked':''} onchange="togglePayment('${p.id}',this.checked)"/> Activo</label><button class="mini-btn danger" onclick="removePayment('${p.id}')">Eliminar</button></div>`).join('');}
+function togglePayment(id,activo){const payments=getPayments();const idx=payments.findIndex(p=>p.id===id);if(idx>-1){payments[idx].activo=activo;savePayments(payments);showToast('Método actualizado ✓');}}
+function removePayment(id){const payments=getPayments().filter(p=>p.id!==id);savePayments(payments);renderPagos();showToast('Método eliminado');}
+function addPayment(){const nombre=document.getElementById('pago-nombre').value.trim();if(!nombre){showToast('Falta el nombre');return;}const payments=getPayments();payments.push({id:uid('pay'),nombre,activo:true});savePayments(payments);renderPagos();document.getElementById('pago-nombre').value='';showToast('Método agregado ✓');}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
+</script>
+</body>
+</html>
