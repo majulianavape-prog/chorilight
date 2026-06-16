@@ -102,6 +102,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="nav-btn" data-section="inventario" onclick="showSection('inventario',this)"><span class="nav-icon" data-icon="package"></span> Inventario / Stock</button>
       <button class="nav-btn" data-section="banners" onclick="showSection('banners',this)"><span class="nav-icon" data-icon="image"></span> Banners</button>
       <button class="nav-btn" data-section="pagos" onclick="showSection('pagos',this)"><span class="nav-icon" data-icon="card"></span> Métodos de pago</button>
+      <button class="nav-btn" data-section="suscriptores" onclick="showSection('suscriptores',this)"><span class="nav-icon" data-icon="users"></span> Suscriptores</button>
       <div class="nav-spacer"></div>
       <button class="logout-btn" onclick="doLogout()">Salir</button>
     </aside>
@@ -175,6 +176,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <button onclick="addPayment()">Agregar método</button>
         </div>
       </section>
+
+      <!-- SUSCRIPTORES: club de promociones por WhatsApp (Google Sheet) -->
+      <section class="section" id="section-suscriptores">
+        <div class="page-title">Suscriptores</div>
+        <div class="metrics" id="subs-metrics"></div>
+        <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
+          <button class="mini-btn" style="display:inline-flex;align-items:center;gap:6px" onclick="loadSubscribers()"><span id="subs-refresh-icon"></span> Actualizar</button>
+          <button class="mini-btn" style="display:inline-flex;align-items:center;gap:6px" onclick="exportSubscribersCSV()"><span id="subs-export-icon"></span> Exportar CSV</button>
+        </div>
+        <div id="subs-list" class="orders-list"><div class="empty">Abre esta sección para cargar los suscriptores.</div></div>
+      </section>
     </main>
   </div>
 </div>
@@ -191,7 +203,7 @@ document.getElementById('u-input').addEventListener('keydown',e=>{if(e.key==='En
 document.getElementById('p-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 function doLogout(){document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';ORDERS=[];}
 
-function showSection(name,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('section-'+name).classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function showSection(name,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('section-'+name).classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(name==='suscriptores'&&!subsLoaded)loadSubscribers();}
 
 /* ---------- Dashboard / Pedidos (Google Apps Script) ---------- */
 async function loadData(){document.getElementById('orders-list').innerHTML='<div class="loading">Cargando...</div>';try{const res=await fetch(API_URL+'?t='+Date.now());if(!res.ok)throw new Error('HTTP '+res.status);const data=await res.json();if(!Array.isArray(data))throw new Error('Respuesta inválida');ORDERS=data.filter(r=>r.Nombre||r.nombre);document.getElementById('last-update').textContent='Actualizado: '+new Date().toLocaleTimeString('es-CO');renderAll();}catch(e){document.getElementById('orders-list').innerHTML='<div class="empty">Error cargando datos.</div>';}}
@@ -227,9 +239,45 @@ function togglePayment(id,activo){const payments=getPayments();const idx=payment
 function removePayment(id){const payments=getPayments().filter(p=>p.id!==id);savePayments(payments);renderPagos();showToast('Método eliminado');}
 function addPayment(){const nombre=document.getElementById('pago-nombre').value.trim();if(!nombre){showToast('Falta el nombre');return;}const payments=getPayments();payments.push({id:uid('pay'),nombre,activo:true});savePayments(payments);renderPagos();document.getElementById('pago-nombre').value='';showToast('Método agregado');}
 
+/* ---------- Suscriptores (Google Sheet, via Apps Script) ---------- */
+let SUBS=[],subsLoaded=false;
+async function loadSubscribers(){
+  const el=document.getElementById('subs-list');el.innerHTML='<div class="loading">Cargando...</div>';
+  try{
+    const res=await fetch(API_URL+'?action=subscribers&t='+Date.now());
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    SUBS=Array.isArray(data)?data:[];
+    subsLoaded=true;
+    renderSubscribers();
+  }catch(e){el.innerHTML='<div class="empty">Error cargando suscriptores. Revisa que el Apps Script tenga el endpoint <b>action=subscribers</b>.</div>';document.getElementById('subs-metrics').innerHTML='';}
+}
+function renderSubscribers(){
+  document.getElementById('subs-metrics').innerHTML=`<div class="metric"><div class="metric-label">Suscriptores</div><div class="metric-value">${SUBS.length}</div></div>`;
+  const el=document.getElementById('subs-list');
+  if(!SUBS.length){el.innerHTML='<div class="empty">Sin suscriptores todavía</div>';return;}
+  el.innerHTML=SUBS.map(s=>{
+    const nombre=getVal(s,'Nombre','nombre')||'—';
+    const wpp=getVal(s,'WhatsApp','whatsapp','Whatsapp')||'';
+    const fecha=getVal(s,'Fecha','fecha')||'';
+    const digits=wpp.replace(/[^\d]/g,'');
+    const right=wpp?`<a class="mini-btn" style="text-decoration:none" href="https://wa.me/${esc(digits)}" target="_blank" rel="noopener">${esc(wpp)}</a>`:'<span class="order-meta">Sin número</span>';
+    return`<div class="order-card"><div class="order-top"><div><div class="order-name">${esc(nombre)}</div>${fecha?`<div class="order-meta">${esc(fecha)}</div>`:''}</div><div class="order-right">${right}</div></div></div>`;
+  }).join('');
+}
+function exportSubscribersCSV(){
+  if(!SUBS.length){showToast('No hay suscriptores para exportar');return;}
+  const rows=[['Fecha','Nombre','WhatsApp']].concat(SUBS.map(s=>[getVal(s,'Fecha','fecha'),getVal(s,'Nombre','nombre'),getVal(s,'WhatsApp','whatsapp','Whatsapp')]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='suscriptores_chorilight.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  showToast('CSV descargado');
+}
+
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
 
-function initIcons(){const map={chart:iconChart,cart:iconCart,package:iconPackage,image:iconImage,card:iconCard};document.querySelectorAll('.nav-icon').forEach(el=>{const fn=map[el.dataset.icon];if(fn)el.innerHTML=fn(15);});const refreshEl=document.getElementById('refresh-icon');if(refreshEl)refreshEl.innerHTML=iconRefresh(13);}
+function initIcons(){const map={chart:iconChart,cart:iconCart,package:iconPackage,image:iconImage,card:iconCard,users:iconUsers};document.querySelectorAll('.nav-icon').forEach(el=>{const fn=map[el.dataset.icon];if(fn)el.innerHTML=fn(15);});const refreshEl=document.getElementById('refresh-icon');if(refreshEl)refreshEl.innerHTML=iconRefresh(13);const subsR=document.getElementById('subs-refresh-icon');if(subsR)subsR.innerHTML=iconRefresh(13);const subsE=document.getElementById('subs-export-icon');if(subsE)subsE.innerHTML=iconDownload(13);}
 initIcons();
 </script>
 </body>
