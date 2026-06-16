@@ -9,7 +9,8 @@ const LS_KEYS = {
   banners: 'cl_banners',
   payments: 'cl_payments',
   onlineOrders: 'cl_online_orders',
-  cart: 'cl_cart'
+  cart: 'cl_cart',
+  subscribers: 'cl_subscribers'
 };
 
 const SEED_PRODUCTS = [
@@ -48,6 +49,10 @@ function savePayments(list){writeLS(LS_KEYS.payments, list);}
 function getOnlineOrders(){return readLS(LS_KEYS.onlineOrders, []);}
 function saveOnlineOrders(list){writeLS(LS_KEYS.onlineOrders, list);}
 function addOnlineOrder(order){const list=getOnlineOrders();list.unshift(order);saveOnlineOrders(list);return list;}
+
+function getSubscribers(){return readLS(LS_KEYS.subscribers, []);}
+function saveSubscribers(list){writeLS(LS_KEYS.subscribers, list);}
+function addSubscriber(sub){const list=getSubscribers();list.unshift(sub);saveSubscribers(list);return list;}
 
 function getCart(){return readLS(LS_KEYS.cart, []);}
 function saveCart(cart){writeLS(LS_KEYS.cart, cart);}
