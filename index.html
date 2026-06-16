@@ -40,8 +40,8 @@ img{display:block;max-width:100%}
 /* ---------- Hero / Banner carousel ---------- */
 .hero{position:relative;margin-top:26px;border-radius:26px;overflow:hidden;min-height:340px;display:flex;align-items:center;color:#fff;box-shadow:var(--shadow);background:radial-gradient(130% 120% at 78% 8%,#5a1a0c 0%,#331007 52%,#1c0a05 100%)}
 .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 80% at 85% 90%,rgba(217,148,26,.22),transparent 60%);pointer-events:none}
-.hero-slide{display:none;width:100%;padding:3.5rem clamp(1.5rem,5vw,4rem);position:relative;z-index:1;animation:fade .6s ease}
-.hero-slide.active{display:block}
+.hero-slide{display:none;width:100%;padding:3.5rem clamp(1.5rem,5vw,4rem);position:relative;z-index:1}
+.hero-slide.active{display:block;animation:fade .6s ease}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .hero-kicker{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#f0c9a0;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:6px 13px;border-radius:99px;margin-bottom:18px}
 .hero-slide h2{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(28px,5vw,46px);line-height:1.06;letter-spacing:-.5px;max-width:14ch;text-wrap:balance}
@@ -205,9 +205,9 @@ function scrollToProducts(){document.getElementById('productos').scrollIntoView(
 /* ---------- Categorías ---------- */
 function renderCategories(){
   const cats=['Todos',...new Set(getProducts().map(p=>p.categoria))];
-  document.getElementById('cat-row').innerHTML=cats.map(c=>`<button class="cat-chip${c===currentCategory?' active':''}" onclick="setCategory('${esc(c)}',this)">${esc(c)}</button>`).join('');
+  document.getElementById('cat-row').innerHTML=cats.map(c=>`<button class="cat-chip${c===currentCategory?' active':''}" data-cat="${esc(c)}" onclick="setCategory(this)">${esc(c)}</button>`).join('');
 }
-function setCategory(c,btn){currentCategory=c;document.querySelectorAll('.cat-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderProducts();}
+function setCategory(btn){currentCategory=btn.dataset.cat;document.querySelectorAll('.cat-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderProducts();}
 
 /* ---------- Productos ---------- */
 const qtyState={};
@@ -238,7 +238,7 @@ function renderProducts(){
     </article>`;
   }).join('');
 }
-function changeQty(id,delta){const next=Math.max(1,(qtyState[id]||1)+delta);qtyState[id]=next;const e=document.getElementById('qty-'+id);if(e)e.textContent=next;}
+function changeQty(id,delta){const product=getProducts().find(p=>p.id===id);const stock=product?Number(product.stock):1;const next=Math.min(Math.max(stock,1),Math.max(1,(qtyState[id]||1)+delta));qtyState[id]=next;const e=document.getElementById('qty-'+id);if(e)e.textContent=next;}
 
 /* ---------- Carrito ---------- */
 function openCart(){renderCart();document.getElementById('cart-drawer').classList.add('show');document.getElementById('overlay').classList.add('show');}
@@ -246,10 +246,16 @@ function closeCart(){document.getElementById('cart-drawer').classList.remove('sh
 function addToCart(id){
   const product=getProducts().find(p=>p.id===id);
   if(!product||Number(product.stock)<=0)return;
+  const stock=Number(product.stock);
   const qty=qtyState[id]||1;
   const cart=getCart();const existing=cart.find(i=>i.id===id);
-  if(existing)existing.cantidad+=qty;else cart.push({id,nombre:product.nombre,precio:product.precio,cantidad:qty});
-  saveCart(cart);updateCartCount();showToast('Agregado al carrito');
+  const yaEnCarrito=existing?existing.cantidad:0;
+  const disponible=stock-yaEnCarrito;
+  if(disponible<=0){showToast('Ya tienes el stock disponible en el carrito');return;}
+  const aAgregar=Math.min(qty,disponible);
+  if(existing)existing.cantidad+=aAgregar;else cart.push({id,nombre:product.nombre,precio:product.precio,cantidad:aAgregar});
+  saveCart(cart);updateCartCount();
+  showToast(aAgregar<qty?`Solo quedan ${disponible}, agregados al carrito`:'Agregado al carrito');
   qtyState[id]=1;const e=document.getElementById('qty-'+id);if(e)e.textContent=1;
 }
 function updateCartCount(){const count=getCart().reduce((s,i)=>s+i.cantidad,0);document.getElementById('cart-count').textContent=count;}
