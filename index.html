@@ -225,10 +225,13 @@ function init(){
 
 /* ---------- Popup suscripción ---------- */
 function maybeShowSubPopup(){
-  if(localStorage.getItem('cl_subscribed'))return;
-  const dismissed=Number(localStorage.getItem('cl_sub_dismissed')||0);
-  if(dismissed&&Date.now()-dismissed<SUB_SNOOZE_DAYS*864e5)return;
-  setTimeout(()=>document.getElementById('sub-overlay').classList.add('show'),3000);
+  const force=/promo/i.test(location.search)||/promo/i.test(location.hash);
+  if(!force){
+    if(localStorage.getItem('cl_subscribed'))return;
+    const dismissed=Number(localStorage.getItem('cl_sub_dismissed')||0);
+    if(dismissed&&Date.now()-dismissed<SUB_SNOOZE_DAYS*864e5)return;
+  }
+  setTimeout(()=>document.getElementById('sub-overlay').classList.add('show'),force?500:3000);
 }
 function closeSubPopup(snooze){
   document.getElementById('sub-overlay').classList.remove('show');
