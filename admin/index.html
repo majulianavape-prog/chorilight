@@ -316,13 +316,15 @@ function renderSubscribers(){
   if(!SUBS.length){el.innerHTML='<div class="empty">Sin suscriptores todavía</div>';return;}
   el.innerHTML=SUBS.map(s=>{
     const nombre=getVal(s,'Nombre','nombre')||'—';
-    const wpp=getVal(s,'WhatsApp','whatsapp','Whatsapp')||'';
+    const wpp=String(getVal(s,'WhatsApp','whatsapp','Whatsapp')||'');
     const fecha=getVal(s,'Fecha','fecha')||'';
     const digits=wpp.replace(/[^\d]/g,'');
     const right=wpp?`<a class="mini-btn" style="text-decoration:none" href="https://wa.me/${esc(digits)}" target="_blank" rel="noopener">${esc(wpp)}</a>`:'<span class="order-meta">Sin número</span>';
-    return`<div class="order-card"><div class="order-top"><div><div class="order-name">${esc(nombre)}</div>${fecha?`<div class="order-meta">${esc(fecha)}</div>`:''}</div><div class="order-right">${right}</div></div></div>`;
+    const fechaTxt=fmtFecha(fecha);
+    return`<div class="order-card"><div class="order-top"><div><div class="order-name">${esc(nombre)}</div>${fechaTxt?`<div class="order-meta">${esc(fechaTxt)}</div>`:''}</div><div class="order-right">${right}</div></div></div>`;
   }).join('');
 }
+function fmtFecha(v){if(!v)return '';const d=new Date(v);if(isNaN(d))return String(v);return d.toLocaleString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
 function exportSubscribersCSV(){
   if(!SUBS.length){showToast('No hay suscriptores para exportar');return;}
   const rows=[['Fecha','Nombre','WhatsApp']].concat(SUBS.map(s=>[getVal(s,'Fecha','fecha'),getVal(s,'Nombre','nombre'),getVal(s,'WhatsApp','whatsapp','Whatsapp')]));
